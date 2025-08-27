@@ -1,9 +1,17 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTicketSchema, updateTicketStatusSchema, loginSchema, insertCustomerSchema } from "@shared/schema";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    userId: string;
+    username: string;
+    role: string;
+  };
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || "satyasri-computers-secret-key";
 
@@ -103,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/customers", authenticateToken, requireRole(['frontdesk']), async (req, res) => {
+  app.get("/api/customers", authenticateToken, requireRole(['frontdesk']), async (req: AuthenticatedRequest, res) => {
     try {
       const customers = await storage.getAllCustomers();
       res.json(customers);
@@ -123,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ticket routes
-  app.get("/api/tickets", authenticateToken, async (req, res) => {
+  app.get("/api/tickets", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       let tickets;
       
@@ -196,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...ticketFields,
         ticketId,
         customerId: customer.id
-      });
+      } as any);
 
       res.status(201).json({ ...ticket, customer });
     } catch (error) {
@@ -205,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/tickets/:ticketId/status", authenticateToken, async (req, res) => {
+  app.patch("/api/tickets/:ticketId/status", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const updateData = updateTicketStatusSchema.parse(req.body);
       
@@ -226,7 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stats routes
-  app.get("/api/stats", authenticateToken, async (req, res) => {
+  app.get("/api/stats", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const allTickets = await storage.getAllTickets();
       
@@ -249,9 +257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Role-specific stats
       if (req.user.role === 'technician') {
         const myTickets = allTickets.filter(t => t.assignedTechnician === req.user.userId);
-        stats.assignedToMe = myTickets.length;
-        stats.myInProgress = myTickets.filter(t => t.serviceStatus === 'In Progress').length;
-        stats.myCompletedToday = myTickets.filter(t => {
+        (stats as any).assignedToMe = myTickets.length;
+        (stats as any).myInProgress = myTickets.filter(t => t.serviceStatus === 'In Progress').length;
+        (stats as any).myCompletedToday = myTickets.filter(t => {
           const today = new Date().toISOString().slice(0, 10);
           return t.completedAt && t.completedAt.toISOString().slice(0, 10) === today;
         }).length;

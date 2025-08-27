@@ -83,7 +83,9 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      email: insertUser.email || null,
+      phone: insertUser.phone || null
     };
     this.users.set(id, user);
     return user;
@@ -105,7 +107,9 @@ export class MemStorage implements IStorage {
     const customer: Customer = {
       ...insertCustomer,
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      email: insertCustomer.email || null,
+      address: insertCustomer.address || null
     };
     this.customers.set(id, customer);
     return customer;
@@ -135,7 +139,16 @@ export class MemStorage implements IStorage {
       id,
       serviceNotes: [],
       createdAt: new Date(),
-      completedAt: null
+      completedAt: null,
+      deviceModel: ticketData.deviceModel || null,
+      serialNumber: ticketData.serialNumber || null,
+      purchaseDate: ticketData.purchaseDate || null,
+      estimatedCost: ticketData.estimatedCost || null,
+      finalCost: ticketData.finalCost || null,
+      assignedTechnician: ticketData.assignedTechnician || null,
+      priority: ticketData.priority || "Medium",
+      serviceStatus: ticketData.serviceStatus || "Pending",
+      paymentStatus: ticketData.paymentStatus || "Pending"
     };
     this.tickets.set(id, ticket);
     return ticket;

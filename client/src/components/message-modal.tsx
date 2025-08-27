@@ -88,7 +88,7 @@ export default function MessageModal({
             
             <div>
               <Label htmlFor="messageType">Message Type</Label>
-              <Select value={messageType} onValueChange={setMessageType}>
+              <Select value={messageType} onValueChange={(value: 'whatsapp' | 'sms') => setMessageType(value)}>
                 <SelectTrigger data-testid="select-message-type">
                   <SelectValue />
                 </SelectTrigger>
