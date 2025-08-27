@@ -73,6 +73,19 @@ export default function TicketForm() {
     createTicketMutation.mutate(data);
   };
 
+  const fillTestData = () => {
+    form.setValue("customerName", "John Doe");
+    form.setValue("customerPhone", "9876543210");
+    form.setValue("customerEmail", "john@example.com");
+    form.setValue("customerAddress", "123 Main Street");
+    form.setValue("deviceType", "Gaming Laptop");
+    form.setValue("deviceModel", "Dell XPS 15");
+    form.setValue("serialNumber", "DL123456");
+    form.setValue("issueCategory", "Hardware");
+    form.setValue("problemDescription", "Laptop not turning on, power button not responding");
+    form.setValue("estimatedCost", "3000");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -274,15 +287,11 @@ export default function TicketForm() {
             </Button>
             <Button
               type="button"
-              variant="outline"
-              onClick={() => {
-                console.log('Current form values:', form.getValues());
-                console.log('Form errors:', form.formState.errors);
-                console.log('Form is valid:', form.formState.isValid);
-              }}
+              variant="secondary"
+              onClick={fillTestData}
               className="mr-2"
             >
-              Debug Form
+              Fill Test Data
             </Button>
             <Button
               type="submit"

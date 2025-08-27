@@ -64,8 +64,11 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
 export const insertTicketSchema = createInsertSchema(tickets).omit({
   id: true,
   ticketId: true,
+  customerId: true,
   createdAt: true,
   completedAt: true,
+  serviceNotes: true,
+  assignedTechnician: true,
 }).extend({
   customerName: z.string().min(1),
   customerPhone: z.string().min(1),
@@ -76,6 +79,7 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
 export const updateTicketStatusSchema = z.object({
   serviceStatus: z.enum(["Pending", "In Progress", "Waiting for Parts", "Testing", "Completed", "Delivered"]),
   priority: z.enum(["Low", "Medium", "High", "Urgent"]).optional(),
+  paymentStatus: z.enum(["Pending", "Paid", "Advance Paid"]).optional(),
   finalCost: z.string().optional(),
   serviceNote: z.string().optional(),
   photos: z.array(z.string()).optional(),

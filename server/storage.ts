@@ -162,6 +162,7 @@ export class MemStorage implements IStorage {
       ...ticket,
       serviceStatus: update.serviceStatus,
       priority: update.priority || ticket.priority,
+      paymentStatus: update.paymentStatus || ticket.paymentStatus,
       finalCost: update.finalCost || ticket.finalCost,
       assignedTechnician: update.technicianId || ticket.assignedTechnician,
       completedAt: update.serviceStatus === "Completed" ? new Date() : ticket.completedAt

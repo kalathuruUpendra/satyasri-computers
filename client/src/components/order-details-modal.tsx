@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { AuthService } from "@/lib/auth";
 import { getStatusColor, formatDate } from "@/lib/ticket-utils";
 import { type TicketWithCustomer } from "@shared/schema";
-import { MessageSquare, Smartphone } from "lucide-react";
+import { MessageSquare, Smartphone, Edit } from "lucide-react";
+import StatusUpdateForm from "./status-update-form";
+import { useState } from "react";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ export default function OrderDetailsModal({
   ticketId, 
   onSendMessage 
 }: OrderDetailsModalProps) {
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const { data: ticket, isLoading } = useQuery<TicketWithCustomer>({
     queryKey: ['/api/tickets', ticketId],
     enabled: isOpen && !!ticketId,
@@ -162,27 +165,47 @@ export default function OrderDetailsModal({
           </div>
         )}
         
-        {/* Actions */}
-        {canSendMessage && (
-          <div className="mt-6 flex space-x-4">
-            <Button
-              onClick={() => onSendMessage(ticket, 'whatsapp')}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="button-send-whatsapp"
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Send WhatsApp
-            </Button>
-            <Button
-              onClick={() => onSendMessage(ticket, 'sms')}
-              variant="outline"
-              data-testid="button-send-sms"
-            >
-              <Smartphone className="mr-2 h-4 w-4" />
-              Send SMS
-            </Button>
+        {/* Status Update Form */}
+        {showStatusUpdate && (
+          <div className="mt-6 border-t border-border pt-6">
+            <StatusUpdateForm
+              ticket={ticket}
+              onClose={() => setShowStatusUpdate(false)}
+            />
           </div>
         )}
+
+        {/* Actions */}
+        <div className="mt-6 flex flex-wrap gap-4">
+          {canSendMessage && (
+            <>
+              <Button
+                onClick={() => onSendMessage(ticket, 'whatsapp')}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-send-whatsapp"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Send WhatsApp
+              </Button>
+              <Button
+                onClick={() => onSendMessage(ticket, 'sms')}
+                variant="outline"
+                data-testid="button-send-sms"
+              >
+                <Smartphone className="mr-2 h-4 w-4" />
+                Send SMS
+              </Button>
+            </>
+          )}
+          <Button
+            onClick={() => setShowStatusUpdate(!showStatusUpdate)}
+            variant="secondary"
+            data-testid="button-update-status"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            {showStatusUpdate ? 'Hide Update' : 'Update Status'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
