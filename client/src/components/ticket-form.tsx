@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +34,7 @@ export default function TicketForm() {
       problemDescription: "",
       estimatedCost: "",
     },
+    mode: "onChange",
   });
 
   const createTicketMutation = useMutation({
@@ -51,16 +52,24 @@ export default function TicketForm() {
       form.reset();
       setLocation('/dashboard');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Ticket creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create ticket. Please try again.",
+        description: `Failed to create ticket: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
+  // Initialize select field values
+  useEffect(() => {
+    form.setValue("priority", "Medium");
+  }, [form]);
+
   const onSubmit = (data: InsertTicket) => {
+    console.log('Form data:', data);
+    console.log('Form errors:', form.formState.errors);
     createTicketMutation.mutate(data);
   };
 
@@ -262,6 +271,18 @@ export default function TicketForm() {
               data-testid="button-cancel"
             >
               Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                console.log('Current form values:', form.getValues());
+                console.log('Form errors:', form.formState.errors);
+                console.log('Form is valid:', form.formState.isValid);
+              }}
+              className="mr-2"
+            >
+              Debug Form
             </Button>
             <Button
               type="submit"
