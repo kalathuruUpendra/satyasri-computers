@@ -131,20 +131,13 @@ export default function TicketForm() {
               <h4 className="font-medium text-foreground">Device Information</h4>
               
               <div>
-                <Label>Device Type *</Label>
-                <Select onValueChange={(value) => form.setValue("deviceType", value)}>
-                  <SelectTrigger data-testid="select-device-type">
-                    <SelectValue placeholder="Select Device Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Desktop">Desktop PC</SelectItem>
-                    <SelectItem value="Laptop">Laptop</SelectItem>
-                    <SelectItem value="Printer">Printer</SelectItem>
-                    <SelectItem value="Scanner">Scanner</SelectItem>
-                    <SelectItem value="Monitor">Monitor</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="deviceType">Device Type *</Label>
+                <Input
+                  id="deviceType"
+                  placeholder="e.g., Desktop PC, Laptop, Printer, etc."
+                  {...form.register("deviceType")}
+                  data-testid="input-device-type"
+                />
                 {form.formState.errors.deviceType && (
                   <p className="text-sm text-destructive mt-1">
                     {form.formState.errors.deviceType.message}
@@ -189,7 +182,9 @@ export default function TicketForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label>Issue Category *</Label>
-                <Select onValueChange={(value) => form.setValue("issueCategory", value)}>
+                <Select 
+                  onValueChange={(value) => form.setValue("issueCategory", value)}
+                >
                   <SelectTrigger data-testid="select-issue-category">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
