@@ -1,5 +1,19 @@
-import { type User, type InsertUser, type Customer, type InsertCustomer, type Ticket, type InsertTicket, type TicketWithCustomer, type UpdateTicketStatus } from "@shared/schema";
+import {
+  users,
+  customers,
+  tickets,
+  type User,
+  type InsertUser,
+  type Customer,
+  type InsertCustomer,
+  type Ticket,
+  type InsertTicket,
+  type TicketWithCustomer,
+  type UpdateTicketStatus
+} from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -26,115 +40,71 @@ export interface IStorage {
   getNextTicketSequence(date: string): Promise<number>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private customers: Map<string, Customer>;
-  private tickets: Map<string, Ticket>;
-  private ticketSequences: Map<string, number>; // date -> sequence number
-
-  constructor() {
-    this.users = new Map();
-    this.customers = new Map();
-    this.tickets = new Map();
-    this.ticketSequences = new Map();
-
-    // Initialize default users
-    this.initializeDefaultUsers();
-  }
-
-  private async initializeDefaultUsers() {
-    const defaultUsers = [
-      {
-        username: "admin",
-        password: "admin123",
-        role: "frontdesk" as const,
-        fullName: "Admin User",
-        email: "admin@satyasricomputers.com",
-        phone: "+91 9876543210"
-      },
-      {
-        username: "tech1",
-        password: "tech123",
-        role: "technician" as const,
-        fullName: "Rajesh Kumar",
-        email: "tech1@satyasricomputers.com",
-        phone: "+91 9876543211"
-      }
-    ];
-
-    for (const userData of defaultUsers) {
-      await this.createUser(userData);
-    }
-  }
-
+export class PgStorage implements IStorage {
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
+    const [user] = await db.insert(users).values({
+      ...insertUser,
       id,
       createdAt: new Date(),
       email: insertUser.email || null,
       phone: insertUser.phone || null
-    };
-    this.users.set(id, user);
+    }).returning();
     return user;
   }
 
   // Customer methods
   async getCustomer(id: string): Promise<Customer | undefined> {
-    return this.customers.get(id);
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    return customer || undefined;
   }
 
   async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
-    return Array.from(this.customers.values()).find(
-      (customer) => customer.phone === phone,
-    );
+    const [customer] = await db.select().from(customers).where(eq(customers.phone, phone));
+    return customer || undefined;
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const id = randomUUID();
-    const customer: Customer = {
+    const [customer] = await db.insert(customers).values({
       ...insertCustomer,
       id,
       createdAt: new Date(),
       email: insertCustomer.email || null,
       address: insertCustomer.address || null
-    };
-    this.customers.set(id, customer);
+    }).returning();
     return customer;
   }
 
   async getAllCustomers(): Promise<Customer[]> {
-    return Array.from(this.customers.values()).sort(
-      (a, b) => b.createdAt!.getTime() - a.createdAt!.getTime()
-    );
+    return await db.select().from(customers).orderBy(desc(customers.createdAt));
   }
 
   // Ticket methods
   async getTicket(id: string): Promise<Ticket | undefined> {
-    return this.tickets.get(id);
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+    return ticket || undefined;
   }
 
   async getTicketByTicketId(ticketId: string): Promise<Ticket | undefined> {
-    return Array.from(this.tickets.values()).find(
-      (ticket) => ticket.ticketId === ticketId,
-    );
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
+    return ticket || undefined;
   }
 
   async createTicket(ticketData: InsertTicket & { ticketId: string; customerId: string }): Promise<Ticket> {
     const id = randomUUID();
-    const ticket: Ticket = {
+    const [ticket] = await db.insert(tickets).values({
       ...ticketData,
       id,
       serviceNotes: [],
@@ -149,84 +119,115 @@ export class MemStorage implements IStorage {
       priority: ticketData.priority || "Medium",
       serviceStatus: ticketData.serviceStatus || "Pending",
       paymentStatus: ticketData.paymentStatus || "Pending"
-    };
-    this.tickets.set(id, ticket);
+    }).returning();
     return ticket;
   }
 
   async updateTicketStatus(ticketId: string, update: UpdateTicketStatus & { technicianId?: string }): Promise<Ticket | undefined> {
-    const ticket = await this.getTicketByTicketId(ticketId);
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
     if (!ticket) return undefined;
 
-    const updatedTicket: Ticket = {
-      ...ticket,
-      serviceStatus: update.serviceStatus,
-      priority: update.priority || ticket.priority,
-      paymentStatus: update.paymentStatus || ticket.paymentStatus,
-      finalCost: update.finalCost || ticket.finalCost,
-      assignedTechnician: update.technicianId || ticket.assignedTechnician,
-      completedAt: update.serviceStatus === "Completed" ? new Date() : ticket.completedAt
-    };
+    const [updatedTicket] = await db.update(tickets)
+      .set({
+        serviceStatus: update.serviceStatus,
+        priority: update.priority || ticket.priority,
+        paymentStatus: update.paymentStatus || ticket.paymentStatus,
+        finalCost: update.finalCost || ticket.finalCost,
+        assignedTechnician: update.technicianId || ticket.assignedTechnician,
+        completedAt: update.serviceStatus === "Completed" ? new Date() : ticket.completedAt
+      })
+      .where(eq(tickets.id, ticket.id))
+      .returning();
 
     // Add service note if provided
     if (update.serviceNote && update.technicianId) {
-      const serviceNotes = ticket.serviceNotes || [];
-      serviceNotes.push({
+      await db.insert(service_notes).values({
         id: randomUUID(),
+        ticketId: ticketId,
         note: update.serviceNote,
         technicianId: update.technicianId,
         timestamp: new Date().toISOString(),
         photos: update.photos || []
       });
-      updatedTicket.serviceNotes = serviceNotes;
     }
 
-    this.tickets.set(ticket.id, updatedTicket);
-    return updatedTicket;
+    return updatedTicket || undefined;
   }
 
   async getAllTickets(): Promise<TicketWithCustomer[]> {
-    const tickets = Array.from(this.tickets.values()).sort(
-      (a, b) => b.createdAt!.getTime() - a.createdAt!.getTime()
-    );
-
-    const ticketsWithCustomers: TicketWithCustomer[] = [];
-    for (const ticket of tickets) {
-      const customer = await this.getCustomer(ticket.customerId);
-      if (customer) {
-        let assignedTechnicianName: string | undefined;
-        if (ticket.assignedTechnician) {
-          const technician = await this.getUser(ticket.assignedTechnician);
-          assignedTechnicianName = technician?.fullName;
-        }
-
-        ticketsWithCustomers.push({
-          ...ticket,
-          customer,
-          assignedTechnicianName
-        });
-      }
-    }
-
-    return ticketsWithCustomers;
+    // Join tickets, customers, and users for technician name
+    const rows = await db.select({
+      id: tickets.id,
+      ticketId: tickets.ticketId,
+      customerId: tickets.customerId,
+      deviceType: tickets.deviceType,
+      deviceModel: tickets.deviceModel,
+      serialNumber: tickets.serialNumber,
+      purchaseDate: tickets.purchaseDate,
+      issueCategory: tickets.issueCategory,
+      problemDescription: tickets.problemDescription,
+      priority: tickets.priority,
+      serviceStatus: tickets.serviceStatus,
+      paymentStatus: tickets.paymentStatus,
+      estimatedCost: tickets.estimatedCost,
+      finalCost: tickets.finalCost,
+      assignedTechnician: tickets.assignedTechnician,
+      serviceNotes: tickets.serviceNotes,
+      createdAt: tickets.createdAt,
+      completedAt: tickets.completedAt,
+      customerName: customers.name,
+      customerPhone: customers.phone,
+      customerEmail: customers.email,
+      customerAddress: customers.address,
+      customerCreatedAt: customers.createdAt,
+      assignedTechnicianName: users.fullName
+    })
+      .from(tickets)
+      .innerJoin(customers, eq(tickets.customerId, customers.id))
+      .leftJoin(users, eq(tickets.assignedTechnician, users.id))
+      .orderBy(desc(tickets.createdAt));
+    return rows as TicketWithCustomer[];
   }
 
   async getTicketsByTechnician(technicianId: string): Promise<TicketWithCustomer[]> {
-    const allTickets = await this.getAllTickets();
-    return allTickets.filter(ticket => ticket.assignedTechnician === technicianId);
+    const rows = await db.select({
+      ...tickets,
+      customer: customers,
+      assignedTechnicianName: sql`u.fullName`
+    })
+      .from(tickets)
+      .innerJoin(customers, eq(tickets.customerId, customers.id))
+      .leftJoin(users, eq(tickets.assignedTechnician, users.id))
+      .where(eq(tickets.assignedTechnician, technicianId))
+      .orderBy(desc(tickets.createdAt));
+    return rows as TicketWithCustomer[];
   }
 
   async getTicketsByStatus(status: string): Promise<TicketWithCustomer[]> {
-    const allTickets = await this.getAllTickets();
-    return allTickets.filter(ticket => ticket.serviceStatus === status);
+    const rows = await db.select({
+      ...tickets,
+      customer: customers,
+      assignedTechnicianName: sql`u.fullName`
+    })
+      .from(tickets)
+      .innerJoin(customers, eq(tickets.customerId, customers.id))
+      .leftJoin(users, eq(tickets.assignedTechnician, users.id))
+      .where(eq(tickets.serviceStatus, status))
+      .orderBy(desc(tickets.createdAt));
+    return rows as TicketWithCustomer[];
   }
 
   async getNextTicketSequence(date: string): Promise<number> {
-    const currentSequence = this.ticketSequences.get(date) || 0;
-    const nextSequence = currentSequence + 1;
-    this.ticketSequences.set(date, nextSequence);
+    const [row] = await db.select().from(ticket_sequences).where(eq(ticket_sequences.date, date));
+    let nextSequence = 1;
+    if (row) {
+      nextSequence = row.sequence + 1;
+      await db.update(ticket_sequences).set({ sequence: nextSequence }).where(eq(ticket_sequences.date, date));
+    } else {
+      await db.insert(ticket_sequences).values({ date, sequence: nextSequence });
+    }
     return nextSequence;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new PgStorage();

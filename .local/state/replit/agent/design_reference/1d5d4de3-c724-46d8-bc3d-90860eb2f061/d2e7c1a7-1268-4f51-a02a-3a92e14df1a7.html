@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satyasri Computers - Service Center Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                }
+            },
+            fontFamily: {
+                sans: ["Inter", "system-ui", "sans-serif"],
+            }
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(210 40% 8%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(210 40% 8%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(210 40% 8%);
+            --primary: hsl(217 91% 60%);
+            --primary-foreground: hsl(0 0% 100%);
+            --secondary: hsl(217 91% 95%);
+            --secondary-foreground: hsl(217 91% 30%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215 16% 47%);
+            --accent: hsl(24 95% 53%);
+            --accent-foreground: hsl(0 0% 100%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 100%);
+            --border: hsl(214 32% 91%);
+            --input: hsl(214 32% 91%);
+            --ring: hsl(217 91% 60%);
+            --radius: 0.5rem;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Loading Animation */
+        .loading-spinner {
+            border: 4px solid var(--muted);
+            border-left: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive table to cards */
+        @media (max-width: 768px) {
+            .table-responsive {
+                display: none;
+            }
+            .cards-responsive {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .table-responsive {
+                display: table;
+            }
+            .cards-responsive {
+                display: none;
+            }
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--muted);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-background font-sans">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-background flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <h2 class="text-xl font-semibold text-foreground mb-2">SATYASRI COMPUTERS</h2>
+            <p class="text-muted-foreground">Loading Service Center...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="hidden fixed inset-0 bg-background flex items-center justify-center">
+        <div class="bg-card p-8 rounded-lg shadow-lg w-full max-w-md mx-4 fade-in">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-primary mb-2">SATYASRI</h1>
+                <h2 class="text-2xl font-bold text-foreground">COMPUTERS</h2>
+                <p class="text-muted-foreground mt-2">Service Center Management</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-foreground mb-2">Username</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username"
+                        class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        required
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-foreground mb-2">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password"
+                        class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        required
+                    >
+                </div>
+                
+                <div>
+                    <label for="role" class="block text-sm font-medium text-foreground mb-2">Role</label>
+                    <select 
+                        id="role" 
+                        name="role"
+                        class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        required
+                    >
+                        <option value="">Select Role</option>
+                        <option value="frontdesk">Front Desk Staff</option>
+                        <option value="technician">Technician</option>
+                    </select>
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition-colors duration-200 font-medium"
+                >
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Sidebar Navigation -->
+        <div class="fixed inset-y-0 left-0 z-50 w-64 bg-primary transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out" id="sidebar">
+            <div class="flex items-center justify-center h-16 bg-primary/90">
+                <h1 class="text-xl font-bold text-primary-foreground">Satyasri</h1>
+            </div>
+            
+            <nav class="mt-8 px-4">
+                <div id="frontdeskNav" class="space-y-2">
+                    <!-- Front Desk Navigation -->
+                    <a href="#" onclick="showSection('dashboardSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-home mr-3"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" onclick="showSection('addTicketSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-plus mr-3"></i>
+                        Add Application
+                    </a>
+                    <a href="#" onclick="showSection('ordersSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-list mr-3"></i>
+                        All Orders
+                    </a>
+                    <a href="#" onclick="showSection('completedOrdersSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-check-circle mr-3"></i>
+                        Completed Orders
+                    </a>
+                    <a href="#" onclick="showSection('customersSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-users mr-3"></i>
+                        Customers
+                    </a>
+                    <a href="#" onclick="showSection('reportsSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Reports
+                    </a>
+                </div>
+                
+                <div id="technicianNav" class="hidden space-y-2">
+                    <!-- Technician Navigation -->
+                    <a href="#" onclick="showSection('techDashboardSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-home mr-3"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" onclick="showSection('assignedOrdersSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-tools mr-3"></i>
+                        Assigned Orders
+                    </a>
+                    <a href="#" onclick="showSection('serviceNotesSection')" class="nav-item flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-sticky-note mr-3"></i>
+                        Service Notes
+                    </a>
+                </div>
+                
+                <div class="mt-8 pt-8 border-t border-primary/20">
+                    <a href="#" onclick="logout()" class="flex items-center px-4 py-2 text-primary-foreground hover:bg-primary/80 rounded-md transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt mr-3"></i>
+                        Logout
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Mobile menu button -->
+        <div class="lg:hidden fixed top-4 left-4 z-50">
+            <button onclick="toggleSidebar()" class="bg-primary text-primary-foreground p-2 rounded-md">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="lg:ml-64 min-h-screen">
+            <!-- Top Bar -->
+            <header class="bg-card shadow-sm border-b border-border">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <h2 id="pageTitle" class="text-2xl font-semibold text-foreground">Dashboard</h2>
+                    <div class="flex items-center space-x-4">
+                        <span id="userRole" class="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">Front Desk Staff</span>
+                        <div class="h-8 w-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <main class="p-6">
+                <!-- Front Desk Dashboard -->
+                <section id="dashboardSection" class="space-y-6">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Ongoing Orders</p>
+                                    <p class="text-3xl font-bold text-foreground">12</p>
+                                </div>
+                                <div class="bg-accent/10 p-3 rounded-full">
+                                    <i class="fas fa-clock text-accent text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Completed Today</p>
+                                    <p class="text-3xl font-bold text-foreground">8</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Total Customers</p>
+                                    <p class="text-3xl font-bold text-foreground">156</p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Revenue (Month)</p>
+                                    <p class="text-3xl font-bold text-foreground">₹45,780</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-rupee-sign text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Recent Orders</h3>
+                        </div>
+                        <div class="p-6">
+                            <!-- Desktop Table -->
+                            <div class="table-responsive overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-border">
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ticket ID</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Customer</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Device</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Issue</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b border-border hover:bg-muted/50 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0001')">
+                                            <td class="py-3 px-4 text-sm font-medium text-primary">SATY-20250127-0001</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Ravi Kumar</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Desktop PC</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">System not booting</td>
+                                            <td class="py-3 px-4"><span class="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs font-medium">In Progress</span></td>
+                                            <td class="py-3 px-4 text-sm text-muted-foreground">20-08</td>
+                                        </tr>
+                                        <tr class="border-b border-border hover:bg-muted/50 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0002')">
+                                            <td class="py-3 px-4 text-sm font-medium text-primary">SATY-20250127-0002</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Anjali Sharma</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Printer</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Paper jam issue</td>
+                                            <td class="py-3 px-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Completed</span></td>
+                                            <td class="py-3 px-4 text-sm text-muted-foreground">22-08</td>
+                                        </tr>
+                                        <tr class="border-b border-border hover:bg-muted/50 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0003')">
+                                            <td class="py-3 px-4 text-sm font-medium text-primary">SATY-20250127-0003</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Anit Sharma</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Laptop</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Screen replacement</td>
+                                            <td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">Pending</span></td>
+                                            <td class="py-3 px-4 text-sm text-muted-foreground">25-08</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Mobile Cards -->
+                            <div class="cards-responsive space-y-4">
+                                <div class="border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0001')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-primary">SATY-20250127-0001</h4>
+                                        <span class="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs font-medium">In Progress</span>
+                                    </div>
+                                    <p class="text-sm text-foreground mb-1">Ravi Kumar - Desktop PC</p>
+                                    <p class="text-sm text-muted-foreground mb-2">System not booting</p>
+                                    <p class="text-xs text-muted-foreground">20-08</p>
+                                </div>
+                                
+                                <div class="border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0002')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-primary">SATY-20250127-0002</h4>
+                                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Completed</span>
+                                    </div>
+                                    <p class="text-sm text-foreground mb-1">Anjali Sharma - Printer</p>
+                                    <p class="text-sm text-muted-foreground mb-2">Paper jam issue</p>
+                                    <p class="text-xs text-muted-foreground">22-08</p>
+                                </div>
+                                
+                                <div class="border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer" onclick="showOrderDetails('SATY-20250127-0003')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-primary">SATY-20250127-0003</h4>
+                                        <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">Pending</span>
+                                    </div>
+                                    <p class="text-sm text-foreground mb-1">Anit Sharma - Laptop</p>
+                                    <p class="text-sm text-muted-foreground mb-2">Screen replacement</p>
+                                    <p class="text-xs text-muted-foreground">25-08</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add Ticket Section -->
+                <section id="addTicketSection" class="hidden space-y-6">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Create New Service Request</h3>
+                        </div>
+                        <div class="p-6">
+                            <form id="newTicketForm" class="space-y-6">
+                                <!-- Customer Information -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <h4 class="font-medium text-foreground">Customer Information</h4>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Customer Name *</label>
+                                            <input type="text" name="customerName" required class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Phone Number *</label>
+                                            <input type="tel" name="phoneNumber" required class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Email</label>
+                                            <input type="email" name="email" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Address</label>
+                                            <textarea name="address" rows="3" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-4">
+                                        <h4 class="font-medium text-foreground">Device Information</h4>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Device Type *</label>
+                                            <select name="deviceType" required class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                                <option value="">Select Device Type</option>
+                                                <option value="Desktop">Desktop PC</option>
+                                                <option value="Laptop">Laptop</option>
+                                                <option value="Printer">Printer</option>
+                                                <option value="Scanner">Scanner</option>
+                                                <option value="Monitor">Monitor</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Brand/Model</label>
+                                            <input type="text" name="deviceModel" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Serial Number</label>
+                                            <input type="text" name="serialNumber" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Purchase Date</label>
+                                            <input type="date" name="purchaseDate" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Service Information -->
+                                <div class="space-y-4">
+                                    <h4 class="font-medium text-foreground">Service Information</h4>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Issue Category *</label>
+                                            <select name="issueCategory" required class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                                <option value="">Select Category</option>
+                                                <option value="Hardware">Hardware Issue</option>
+                                                <option value="Software">Software Issue</option>
+                                                <option value="Network">Network Issue</option>
+                                                <option value="Maintenance">Maintenance</option>
+                                                <option value="Upgrade">Upgrade</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-foreground mb-2">Priority</label>
+                                            <select name="priority" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                                <option value="Low">Low</option>
+                                                <option value="Medium" selected>Medium</option>
+                                                <option value="High">High</option>
+                                                <option value="Urgent">Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-foreground mb-2">Problem Description *</label>
+                                        <textarea name="problemDescription" rows="4" required class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Describe the issue in detail..."></textarea>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-foreground mb-2">Estimated Cost</label>
+                                        <input type="number" name="estimatedCost" min="0" step="0.01" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="₹">
+                                    </div>
+                                </div>
+                                
+                                <!-- Form Actions -->
+                                <div class="flex justify-end space-x-4 pt-6 border-t border-border">
+                                    <button type="button" onclick="showSection('dashboardSection')" class="px-6 py-2 border border-border text-foreground hover:bg-muted rounded-md transition-colors duration-200">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="px-6 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200">
+                                        Create Ticket
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Orders Section -->
+                <section id="ordersSection" class="hidden space-y-6">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-foreground">All Orders</h3>
+                                <div class="flex space-x-4">
+                                    <select class="px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option>All Status</option>
+                                        <option>Pending</option>
+                                        <option>In Progress</option>
+                                        <option>Completed</option>
+                                        <option>Delivered</option>
+                                    </select>
+                                    <input type="text" placeholder="Search orders..." class="px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <!-- Desktop Table -->
+                            <div class="table-responsive overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-border">
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ticket ID</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Customer</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Device</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Issue</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Service Status</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Payment Status</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
+                                            <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b border-border hover:bg-muted/50" data-mock="true">
+                                            <td class="py-3 px-4 text-sm font-medium text-primary cursor-pointer" onclick="showOrderDetails('SATY-20250127-0001')">SATY-20250127-0001</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Ravi Kumar</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Desktop PC</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">System not booting</td>
+                                            <td class="py-3 px-4"><span class="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs font-medium">In Progress</span></td>
+                                            <td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">Pending</span></td>
+                                            <td class="py-3 px-4 text-sm text-muted-foreground">20-08-2025</td>
+                                            <td class="py-3 px-4">
+                                                <button onclick="sendMessage('Ravi Kumar', 'Desktop PC')" class="text-primary hover:text-primary/80 mr-2" title="Send Message">
+                                                    <i class="fas fa-message"></i>
+                                                </button>
+                                                <button onclick="editOrder('SATY-20250127-0001')" class="text-muted-foreground hover:text-foreground" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <!-- Additional mock rows with data-mock="true" -->
+                                        <tr class="border-b border-border hover:bg-muted/50" data-mock="true">
+                                            <td class="py-3 px-4 text-sm font-medium text-primary cursor-pointer" onclick="showOrderDetails('SATY-20250127-0002')">SATY-20250127-0002</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Anjali Sharma</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Printer</td>
+                                            <td class="py-3 px-4 text-sm text-foreground">Paper jam issue</td>
+                                            <td class="py-3 px-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Completed</span></td>
+                                            <td class="py-3 px-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">Paid</span></td>
+                                            <td class="py-3 px-4 text-sm text-muted-foreground">22-08-2025</td>
+                                            <td class="py-3 px-4">
+                                                <button onclick="sendMessage('Anjali Sharma', 'Printer')" class="text-primary hover:text-primary/80 mr-2" title="Send Message">
+                                                    <i class="fas fa-message"></i>
+                                                </button>
+                                                <button onclick="editOrder('SATY-20250127-0002')" class="text-muted-foreground hover:text-foreground" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Mobile Cards -->
+                            <div class="cards-responsive space-y-4" data-mock="true">
+                                <div class="border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-medium text-primary cursor-pointer" onclick="showOrderDetails('SATY-20250127-0001')">SATY-20250127-0001</h4>
+                                        <div class="flex space-x-2">
+                                            <span class="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs font-medium">In Progress</span>
+                                            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">Pending</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-foreground mb-1">Ravi Kumar - Desktop PC</p>
+                                    <p class="text-sm text-muted-foreground mb-2">System not booting</p>
+                                    <div class="flex justify-between items-center">
+                                        <p class="text-xs text-muted-foreground">20-08-2025</p>
+                                        <div class="flex space-x-2">
+                                            <button onclick="sendMessage('Ravi Kumar', 'Desktop PC')" class="text-primary hover:text-primary/80" title="Send Message">
+                                                <i class="fas fa-message"></i>
+                                            </button>
+                                            <button onclick="editOrder('SATY-20250127-0001')" class="text-muted-foreground hover:text-foreground" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Technician Dashboard -->
+                <section id="techDashboardSection" class="hidden space-y-6">
+                    <!-- Technician Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Assigned Orders</p>
+                                    <p class="text-3xl font-bold text-foreground">5</p>
+                                </div>
+                                <div class="bg-accent/10 p-3 rounded-full">
+                                    <i class="fas fa-wrench text-accent text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">In Progress</p>
+                                    <p class="text-3xl font-bold text-foreground">3</p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i class="fas fa-cog text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Completed Today</p>
+                                    <p class="text-3xl font-bold text-foreground">2</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-check text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assigned Orders for Technician -->
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">My Assigned Orders</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4" data-mock="true">
+                                <!-- Order Card -->
+                                <div class="border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h4 class="font-medium text-primary mb-1">SATY-20250127-0001</h4>
+                                            <p class="text-sm text-foreground">Ravi Kumar - Desktop PC</p>
+                                            <p class="text-sm text-muted-foreground">System not booting</p>
+                                        </div>
+                                        <span class="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs font-medium">In Progress</span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-muted-foreground mb-1">Update Status</label>
+                                            <select class="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                                <option>In Progress</option>
+                                                <option>Waiting for Parts</option>
+                                                <option>Testing</option>
+                                                <option>Completed</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-muted-foreground mb-1">Priority</label>
+                                            <select class="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                                <option>Medium</option>
+                                                <option>Low</option>
+                                                <option>High</option>
+                                                <option>Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="block text-xs font-medium text-muted-foreground mb-1">Service Notes</label>
+                                        <textarea rows="2" class="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Add service notes or updates..."></textarea>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex space-x-2">
+                                            <button class="bg-secondary text-secondary-foreground px-3 py-1 rounded text-sm hover:bg-secondary/80 transition-colors duration-200">
+                                                <i class="fas fa-camera mr-1"></i>
+                                                Add Photo
+                                            </button>
+                                            <button class="bg-secondary text-secondary-foreground px-3 py-1 rounded text-sm hover:bg-secondary/80 transition-colors duration-200">
+                                                <i class="fas fa-file mr-1"></i>
+                                                View Details
+                                            </button>
+                                        </div>
+                                        <button class="bg-primary text-primary-foreground px-4 py-1 rounded text-sm hover:bg-primary/90 transition-colors duration-200">
+                                            Update
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add other sections like customers, reports, etc. -->
+                <section id="customersSection" class="hidden">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Customer Management</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-muted-foreground">Customer management interface would be implemented here.</p>
+                            <!-- TODO: Implement customer management interface -->
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reportsSection" class="hidden">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Reports & Analytics</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-muted-foreground">Reports and analytics interface would be implemented here.</p>
+                            <!-- TODO: Implement reports and analytics -->
+                        </div>
+                    </div>
+                </section>
+
+                <section id="completedOrdersSection" class="hidden">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Completed Orders</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-muted-foreground">Completed orders interface would be implemented here.</p>
+                            <!-- TODO: Implement completed orders interface -->
+                        </div>
+                    </div>
+                </section>
+
+                <section id="assignedOrdersSection" class="hidden">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Assigned Orders</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-muted-foreground">Assigned orders interface would be implemented here.</p>
+                            <!-- TODO: Implement assigned orders interface for technicians -->
+                        </div>
+                    </div>
+                </section>
+
+                <section id="serviceNotesSection" class="hidden">
+                    <div class="bg-card rounded-lg shadow-sm border border-border">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-semibold text-foreground">Service Notes</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-muted-foreground">Service notes interface would be implemented here.</p>
+                            <!-- TODO: Implement service notes interface -->
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-card rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-border flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-foreground">Order Details</h3>
+                <button onclick="closeOrderModal()" class="text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div id="orderModalContent" data-mock="true">
+                    <!-- Order details content will be loaded here -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-foreground mb-4">Customer Information</h4>
+                            <div class="space-y-2">
+                                <p><span class="text-muted-foreground">Name:</span> <span data-bind="customer.name">Ravi Kumar</span></p>
+                                <p><span class="text-muted-foreground">Phone:</span> <span data-bind="customer.phone">+91 9876543210</span></p>
+                                <p><span class="text-muted-foreground">Email:</span> <span data-bind="customer.email">ravi.kumar@email.com</span></p>
+                                <p><span class="text-muted-foreground">Address:</span> <span data-bind="customer.address">123 Main Street, City</span></p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-foreground mb-4">Device Information</h4>
+                            <div class="space-y-2">
+                                <p><span class="text-muted-foreground">Type:</span> <span data-bind="device.type">Desktop PC</span></p>
+                                <p><span class="text-muted-foreground">Brand/Model:</span> <span data-bind="device.model">Dell Optiplex 7080</span></p>
+                                <p><span class="text-muted-foreground">Serial Number:</span> <span data-bind="device.serial">DEL123456789</span></p>
+                                <p><span class="text-muted-foreground">Issue:</span> <span data-bind="device.issue">System not booting</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex space-x-4">
+                        <button onclick="sendMessage('Ravi Kumar', 'Desktop PC')" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors duration-200">
+                            <i class="fab fa-whatsapp mr-2"></i>
+                            Send WhatsApp
+                        </button>
+                        <button onclick="sendSMS('Ravi Kumar', 'Desktop PC')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200">
+                            <i class="fas fa-sms mr-2"></i>
+                            Send SMS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-card rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6 border-b border-border">
+                <h3 class="text-lg font-semibold text-foreground">Send Notification</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-2">Message Type</label>
+                        <select id="messageType" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="sms">SMS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-2">Message</label>
+                        <textarea id="messageText" rows="4" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button onclick="closeMessageModal()" class="px-4 py-2 border border-border text-foreground hover:bg-muted rounded-md transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button onclick="sendMessageConfirm()" class="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200">
+                        Send Message
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let currentSection = 'dashboardSection';
+
+        // Initialize Application
+        (function() {
+            // Simulate loading
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+            }, 2000);
+        })();
+
+        // Authentication Functions
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const credentials = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                role: formData.get('role')
+            };
+            
+            // TODO: Implement actual authentication with JWT
+            // Mock authentication for demo
+            if (credentials.username && credentials.password && credentials.role) {
+                currentUser = credentials;
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                
+                setupDashboard(credentials.role);
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
+
+        function setupDashboard(role) {
+            const userRoleElement = document.getElementById('userRole');
+            const frontdeskNav = document.getElementById('frontdeskNav');
+            const technicianNav = document.getElementById('technicianNav');
+            
+            if (role === 'frontdesk') {
+                userRoleElement.textContent = 'Front Desk Staff';
+                frontdeskNav.classList.remove('hidden');
+                technicianNav.classList.add('hidden');
+                showSection('dashboardSection');
+            } else if (role === 'technician') {
+                userRoleElement.textContent = 'Technician';
+                frontdeskNav.classList.add('hidden');
+                technicianNav.classList.remove('hidden');
+                showSection('techDashboardSection');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // Navigation Functions
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('main section');
+            sections.forEach(section => section.classList.add('hidden'));
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                targetSection.classList.add('fade-in');
+            }
+            
+            // Update page title
+            const pageTitle = document.getElementById('pageTitle');
+            const sectionTitles = {
+                'dashboardSection': 'Dashboard',
+                'addTicketSection': 'Create New Ticket',
+                'ordersSection': 'All Orders',
+                'completedOrdersSection': 'Completed Orders',
+                'customersSection': 'Customers',
+                'reportsSection': 'Reports',
+                'techDashboardSection': 'Technician Dashboard',
+                'assignedOrdersSection': 'Assigned Orders',
+                'serviceNotesSection': 'Service Notes'
+            };
+            
+            pageTitle.textContent = sectionTitles[sectionId] || 'Dashboard';
+            currentSection = sectionId;
+            
+            // Close sidebar on mobile
+            if (window.innerWidth < 1024) {
+                toggleSidebar();
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // Order Management Functions
+        function handleNewTicket(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const ticketData = {
+                customerName: formData.get('customerName'),
+                phoneNumber: formData.get('phoneNumber'),
+                email: formData.get('email'),
+                address: formData.get('address'),
+                deviceType: formData.get('deviceType'),
+                deviceModel: formData.get('deviceModel'),
+                serialNumber: formData.get('serialNumber'),
+                purchaseDate: formData.get('purchaseDate'),
+                issueCategory: formData.get('issueCategory'),
+                priority: formData.get('priority'),
+                problemDescription: formData.get('problemDescription'),
+                estimatedCost: formData.get('estimatedCost')
+            };
+            
+            // TODO: Generate ticket ID with format SATY-YYYYMMDD-XXXX
+            const ticketId = generateTicketId();
+            
+            console.log('Creating ticket:', { ticketId, ...ticketData });
+            
+            // TODO: Submit to backend API
+            alert(`Ticket created successfully!\nTicket ID: ${ticketId}`);
+            
+            // Reset form and redirect
+            event.target.reset();
+            showSection('dashboardSection');
+        }
+
+        function generateTicketId() {
+            const today = new Date();
+            const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+            const sequence = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+            return `SATY-${dateStr}-${sequence}`;
+        }
+
+        function showOrderDetails(ticketId) {
+            // TODO: Fetch order details from API
+            console.log('Showing details for ticket:', ticketId);
+            
+            document.getElementById('orderModal').classList.remove('hidden');
+            
+            // Mock data population
+            // In real implementation, this would fetch from API
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function editOrder(ticketId) {
+            // TODO: Implement order editing functionality
+            console.log('Editing order:', ticketId);
+        }
+
+        // Communication Functions
+        function sendMessage(customerName, deviceName) {
+            const messageText = `Dear ${customerName}, your ${deviceName}'s service is completed and out for delivery. Please collect it.`;
+            
+            document.getElementById('messageText').value = messageText;
+            document.getElementById('messageModal').classList.remove('hidden');
+        }
+
+        function sendSMS(customerName, deviceName) {
+            sendMessage(customerName, deviceName);
+            document.getElementById('messageType').value = 'sms';
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').classList.add('hidden');
+        }
+
+        function sendMessageConfirm() {
+            const messageType = document.getElementById('messageType').value;
+            const messageText = document.getElementById('messageText').value;
+            
+            // TODO: Implement actual SMS/WhatsApp sending via Twilio or Meta API
+            console.log(`Sending ${messageType}:`, messageText);
+            
+            alert(`${messageType.toUpperCase()} message sent successfully!`);
+            closeMessageModal();
+        }
+
+        // Event Listeners
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        document.getElementById('newTicketForm').addEventListener('submit', handleNewTicket);
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                document.getElementById('sidebar').classList.remove('-translate-x-full');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -74,13 +74,24 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
   customerPhone: z.string().min(1),
   customerEmail: z.string().optional(),
   customerAddress: z.string().optional(),
+
+  deviceType: z.string().min(1),
+  deviceModel: z.string().optional(),
+  serialNumber: z.string().optional(),
+  purchaseDate: z.string().optional(),
+  issueCategory: z.string().min(1),
+
+  priority: z.string().min(1),
+  problemDescription: z.string().min(1),
+
+  estimatedCost: z.preprocess(val => val === "" ? undefined : Number(val), z.number().optional()),
 });
 
 export const updateTicketStatusSchema = z.object({
   serviceStatus: z.enum(["Pending", "In Progress", "Waiting for Parts", "Testing", "Completed", "Delivered"]),
   priority: z.enum(["Low", "Medium", "High", "Urgent"]).optional(),
   paymentStatus: z.enum(["Pending", "Paid", "Advance Paid"]).optional(),
-  finalCost: z.string().optional(),
+  finalCost: z.preprocess(val => val === "" ? undefined : Number(val), z.number().optional()),
   serviceNote: z.string().optional(),
   photos: z.array(z.string()).optional(),
 });

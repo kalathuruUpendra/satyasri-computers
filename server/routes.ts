@@ -271,6 +271,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+    // Reports routes
+  app.get("/api/reports", authenticateToken, requireRole(['frontdesk']), async (req: AuthenticatedRequest, res) => {
+    try {
+      const allTickets = await storage.getAllTickets();
+      const allCustomers = await storage.getAllCustomers();
+      // Calculate date ranges
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const today = new Date().toISOString().slice(0, 10);
+      // Ticket status breakdown
+      const statusBreakdown = {
+        pending: allTickets.filter(t => t.serviceStatus === 'Pending').length,
+        inProgress: allTickets.filter(t => t.serviceStatus === 'In Progress').length,
+        waitingForParts: allTickets.filter(t => t.serviceStatus === 'Waiting for Parts').length,
+        testing: allTickets.filter(t => t.serviceStatus === 'Testing').length,
+        completed: allTickets.filter(t => t.serviceStatus === 'Completed').length,
+        delivered: allTickets.filter(t => t.serviceStatus === 'Delivered').length,
+      };
+      // Revenue calculations
+      const thisMonthRevenue = allTickets
+        .filter(t => t.finalCost && t.serviceStatus === 'Delivered' && 
+                new Date(t.completedAt || t.createdAt) >= startOfMonth)
+        .reduce((sum, t) => sum + parseFloat(t.finalCost || '0'), 0);
+      const thisWeekRevenue = allTickets
+        .filter(t => t.finalCost && t.serviceStatus === 'Delivered' && 
+                new Date(t.completedAt || t.createdAt) >= startOfWeek)
+        .reduce((sum, t) => sum + parseFloat(t.finalCost || '0'), 0);
+      const todayRevenue = allTickets
+        .filter(t => t.finalCost && t.serviceStatus === 'Delivered' && 
+                (t.completedAt?.toISOString().slice(0, 10) === today))
+        .reduce((sum, t) => sum + parseFloat(t.finalCost || '0'), 0);
+      // Top issues
+      const issueCategories = allTickets.reduce((acc: any, ticket) => {
+        acc[ticket.issueCategory] = (acc[ticket.issueCategory] || 0) + 1;
+        return acc;
+      }, {});
+      // Performance metrics
+      const avgResolutionTime = allTickets
+        .filter(t => t.completedAt)
+        .reduce((sum, t) => {
+          const start = new Date(t.createdAt).getTime();
+          const end = new Date(t.completedAt!).getTime();
+          return sum + (end - start);
+        }, 0) / allTickets.filter(t => t.completedAt).length || 0;
+      const reports = {
+        summary: {
+          totalTickets: allTickets.length,
+          totalCustomers: allCustomers.length,
+          totalRevenue: allTickets
+            .filter(t => t.finalCost && t.serviceStatus === 'Delivered')
+            .reduce((sum, t) => sum + parseFloat(t.finalCost || '0'), 0),
+          avgResolutionDays: Math.round(avgResolutionTime / (1000 * 60 * 60 * 24))
+        },
+        revenue: {
+          today: todayRevenue,
+          thisWeek: thisWeekRevenue,
+          thisMonth: thisMonthRevenue
+        },
+        statusBreakdown,
+        topIssues: Object.entries(issueCategories)
+          .sort(([,a]: any, [,b]: any) => b - a)
+          .slice(0, 5)
+          .map(([category, count]) => ({ category, count })),
+        recentTickets: allTickets.slice(0, 10)
+      };
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reports" });
+    }
+  });
+  // Auth logout route
+  app.post("/api/auth/logout", authenticateToken, (req, res) => {
+    // With JWT, logout is handled client-side by removing the token
+    res.json({ message: "Logged out successfully" });
+  });
+
+
   // Communication routes
   app.post("/api/communication/send", authenticateToken, requireRole(['frontdesk']), async (req, res) => {
     try {

@@ -11,6 +11,8 @@ import TicketForm from "@/components/ticket-form";
 import OrderDetailsModal from "@/components/order-details-modal";
 import MessageModal from "@/components/message-modal";
 import { type TicketWithCustomer } from "@shared/schema";
+import CustomersList from "@/components/customers-list";
+import ReportsDashboard from "@/components/reports-dashboard";
 
 export default function Dashboard() {
   const [location, setLocation] = useLocation();
@@ -127,7 +129,9 @@ export default function Dashboard() {
         ) : null;
       
       case '/customers':
+        return user.role === 'frontdesk' ? <CustomersList /> : null;
       case '/reports':
+        return user.role === 'frontdesk' ? <ReportsDashboard /> : null;
       case '/service-notes':
         return (
           <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
