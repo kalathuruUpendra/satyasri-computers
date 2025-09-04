@@ -32,7 +32,7 @@ export default function TicketForm() {
       issueCategory: "",
       priority: "Medium",
       problemDescription: "",
-      estimatedCost: "",
+      estimatedCost: 500,
     },
     mode: "onChange",
   });
@@ -83,7 +83,7 @@ export default function TicketForm() {
     form.setValue("serialNumber", "DL123456");
     form.setValue("issueCategory", "Hardware");
     form.setValue("problemDescription", "Laptop not turning on, power button not responding");
-    form.setValue("estimatedCost", "3000");
+    form.setValue("estimatedCost", 3000);
   };
 
   return (

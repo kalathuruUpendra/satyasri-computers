@@ -16,6 +16,7 @@ interface OrdersTableProps {
   showActions?: boolean;
 }
 
+
 export default function OrdersTable({ 
   tickets, 
   onShowDetails, 
@@ -75,9 +76,9 @@ export default function OrdersTable({
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ticket ID</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Customer</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Device</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Issue</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-48">Customer</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-40">Device</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-60">Issue</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Service Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Payment Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
@@ -94,9 +95,9 @@ export default function OrdersTable({
                       data-testid={`ticket-link-${ticket.ticketId}`}>
                     {ticket.ticketId}
                   </td>
-                  <td className="py-3 px-4 text-sm text-foreground">{ticket.customer.name}</td>
-                  <td className="py-3 px-4 text-sm text-foreground">{ticket.deviceType}</td>
-                  <td className="py-3 px-4 text-sm text-foreground max-w-48 truncate" title={ticket.problemDescription}>
+                  <td className="py-3 px-4 text-sm text-foreground w-48">{ticket.customer?.name}</td>
+                  <td className="py-3 px-4 text-sm text-foreground w-40">{ticket.deviceType}</td>
+                  <td className="py-3 px-4 text-sm text-foreground max-w-60 truncate" title={ticket.problemDescription}>
                     {ticket.problemDescription}
                   </td>
                   <td className="py-3 px-4">
@@ -163,7 +164,7 @@ export default function OrdersTable({
                   </Badge>
                 </div>
               </div>
-              <p className="text-sm text-foreground mb-1">{ticket.customer.name} - {ticket.deviceType}</p>
+              <p className="text-sm text-foreground mb-1">{ticket.customer?.name} - {ticket.deviceType}</p>
               <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{ticket.problemDescription}</p>
               <div className="flex justify-between items-center">
                 <p className="text-xs text-muted-foreground">{formatShortDate(ticket.createdAt!)}</p>

@@ -64,22 +64,33 @@ export class AuthService {
       throw new Error('No token found');
     }
 
-    const response = await fetch('/api/auth/verify', {
-      headers: this.getAuthHeaders()
-    });
+    try {
+      const response = await fetch('/api/auth/verify', {
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
+      });
 
     if (!response.ok) {
+        this.clearAuth();
+        throw new Error('Token verification failed');
+      }
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        this.clearAuth();
+        throw new Error('Invalid response format');
+      }
+      const { user } = await response.json();
+      localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+      return user;
+    } catch (error) {
       this.clearAuth();
-      throw new Error('Token verification failed');
+      throw error;
     }
-
-    const { user } = await response.json();
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    return user;
   }
 
   static logout(): void {
-    this.clearAuth();
-    window.location.href = '/';
-  }
+  AuthService.clearAuth();
+  window.location.href = '/';
+}
+
 }

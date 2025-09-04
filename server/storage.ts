@@ -9,11 +9,12 @@ import {
   type Ticket,
   type InsertTicket,
   type TicketWithCustomer,
-  type UpdateTicketStatus
+  type UpdateTicketStatus,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
+import { ticket_sequences } from "@shared/schema";
 
 export interface IStorage {
   // User methods
@@ -30,8 +31,13 @@ export interface IStorage {
   // Ticket methods
   getTicket(id: string): Promise<Ticket | undefined>;
   getTicketByTicketId(ticketId: string): Promise<Ticket | undefined>;
-  createTicket(ticket: InsertTicket & { ticketId: string; customerId: string }): Promise<Ticket>;
-  updateTicketStatus(ticketId: string, update: UpdateTicketStatus & { technicianId?: string }): Promise<Ticket | undefined>;
+  createTicket(
+    ticket: InsertTicket & { ticketId: string; customerId: string }
+  ): Promise<Ticket>;
+  updateTicketStatus(
+    ticketId: string,
+    update: UpdateTicketStatus & { technicianId?: string }
+  ): Promise<Ticket | undefined>;
   getAllTickets(): Promise<TicketWithCustomer[]>;
   getTicketsByTechnician(technicianId: string): Promise<TicketWithCustomer[]>;
   getTicketsByStatus(status: string): Promise<TicketWithCustomer[]>;
@@ -48,42 +54,57 @@ export class PgStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const [user] = await db.insert(users).values({
-      ...insertUser,
-      id,
-      createdAt: new Date(),
-      email: insertUser.email || null,
-      phone: insertUser.phone || null
-    }).returning();
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        id,
+        createdAt: new Date(),
+        email: insertUser.email || null,
+        phone: insertUser.phone || null,
+      })
+      .returning();
     return user;
   }
 
   // Customer methods
   async getCustomer(id: string): Promise<Customer | undefined> {
-    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id));
     return customer || undefined;
   }
 
   async getCustomerByPhone(phone: string): Promise<Customer | undefined> {
-    const [customer] = await db.select().from(customers).where(eq(customers.phone, phone));
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, phone));
     return customer || undefined;
   }
 
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const id = randomUUID();
-    const [customer] = await db.insert(customers).values({
-      ...insertCustomer,
-      id,
-      createdAt: new Date(),
-      email: insertCustomer.email || null,
-      address: insertCustomer.address || null
-    }).returning();
+    const [customer] = await db
+      .insert(customers)
+      .values({
+        ...insertCustomer,
+        id,
+        createdAt: new Date(),
+        email: insertCustomer.email || null,
+        address: insertCustomer.address || null,
+      })
+      .returning();
     return customer;
   }
 
@@ -98,57 +119,92 @@ export class PgStorage implements IStorage {
   }
 
   async getTicketByTicketId(ticketId: string): Promise<Ticket | undefined> {
-    const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
+    const [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.ticketId, ticketId));
     return ticket || undefined;
   }
 
-  async createTicket(ticketData: InsertTicket & { ticketId: string; customerId: string }): Promise<Ticket> {
+  async createTicket(
+    ticketData: InsertTicket & { ticketId: string; customerId: string }
+  ): Promise<Ticket> {
     const id = randomUUID();
-    const [ticket] = await db.insert(tickets).values({
-      ...ticketData,
-      id,
-      serviceNotes: [],
-      createdAt: new Date(),
-      completedAt: null,
-      deviceModel: ticketData.deviceModel || null,
-      serialNumber: ticketData.serialNumber || null,
-      purchaseDate: ticketData.purchaseDate || null,
-      estimatedCost: ticketData.estimatedCost || null,
-      finalCost: ticketData.finalCost || null,
-      assignedTechnician: ticketData.assignedTechnician || null,
-      priority: ticketData.priority || "Medium",
-      serviceStatus: ticketData.serviceStatus || "Pending",
-      paymentStatus: ticketData.paymentStatus || "Pending"
-    }).returning();
+    const [ticket] = await db
+      .insert(tickets)
+      .values({
+        ...ticketData,
+        id,
+        serviceNotes: [],
+        createdAt: new Date(),
+        completedAt: null,
+        deviceModel: ticketData.deviceModel || null,
+        serialNumber: ticketData.serialNumber || null,
+        purchaseDate: ticketData.purchaseDate || null,
+        estimatedCost:
+          ticketData.estimatedCost !== undefined &&
+          ticketData.estimatedCost !== null
+            ? String(ticketData.estimatedCost)
+            : null,
+        finalCost:
+          ticketData.finalCost !== undefined && ticketData.finalCost !== null
+            ? String(ticketData.finalCost)
+            : null,
+        priority: ticketData.priority || "Medium",
+        serviceStatus: ticketData.serviceStatus || "Pending",
+        paymentStatus: ticketData.paymentStatus || "Pending",
+      })
+      .returning();
     return ticket;
   }
 
-  async updateTicketStatus(ticketId: string, update: UpdateTicketStatus & { technicianId?: string }): Promise<Ticket | undefined> {
-    const [ticket] = await db.select().from(tickets).where(eq(tickets.ticketId, ticketId));
+  async updateTicketStatus(
+    ticketId: string,
+    update: UpdateTicketStatus & { technicianId?: string }
+  ): Promise<Ticket | undefined> {
+    const [ticket] = await db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.ticketId, ticketId));
     if (!ticket) return undefined;
 
-    const [updatedTicket] = await db.update(tickets)
+    const [updatedTicket] = await db
+      .update(tickets)
       .set({
         serviceStatus: update.serviceStatus,
         priority: update.priority || ticket.priority,
         paymentStatus: update.paymentStatus || ticket.paymentStatus,
-        finalCost: update.finalCost || ticket.finalCost,
+        finalCost:
+          update.finalCost !== undefined && update.finalCost !== null
+            ? String(update.finalCost)
+            : ticket.finalCost,
         assignedTechnician: update.technicianId || ticket.assignedTechnician,
-        completedAt: update.serviceStatus === "Completed" ? new Date() : ticket.completedAt
+        completedAt:
+          update.serviceStatus === "Completed"
+            ? new Date()
+            : ticket.completedAt,
       })
       .where(eq(tickets.id, ticket.id))
       .returning();
 
     // Add service note if provided
     if (update.serviceNote && update.technicianId) {
-      await db.insert(service_notes).values({
+      const newNote = {
         id: randomUUID(),
-        ticketId: ticketId,
         note: update.serviceNote,
         technicianId: update.technicianId,
         timestamp: new Date().toISOString(),
-        photos: update.photos || []
-      });
+        photos: update.photos || [],
+      };
+
+      await db
+        .update(tickets)
+        .set({
+          serviceNotes: sql`${tickets.serviceNotes} || ${JSON.stringify([
+            newNote,
+          ])}::jsonb`,
+        })
+        .where(eq(tickets.ticketId, ticketId));
     }
 
     return updatedTicket || undefined;
@@ -156,32 +212,33 @@ export class PgStorage implements IStorage {
 
   async getAllTickets(): Promise<TicketWithCustomer[]> {
     // Join tickets, customers, and users for technician name
-    const rows = await db.select({
-      id: tickets.id,
-      ticketId: tickets.ticketId,
-      customerId: tickets.customerId,
-      deviceType: tickets.deviceType,
-      deviceModel: tickets.deviceModel,
-      serialNumber: tickets.serialNumber,
-      purchaseDate: tickets.purchaseDate,
-      issueCategory: tickets.issueCategory,
-      problemDescription: tickets.problemDescription,
-      priority: tickets.priority,
-      serviceStatus: tickets.serviceStatus,
-      paymentStatus: tickets.paymentStatus,
-      estimatedCost: tickets.estimatedCost,
-      finalCost: tickets.finalCost,
-      assignedTechnician: tickets.assignedTechnician,
-      serviceNotes: tickets.serviceNotes,
-      createdAt: tickets.createdAt,
-      completedAt: tickets.completedAt,
-      customerName: customers.name,
-      customerPhone: customers.phone,
-      customerEmail: customers.email,
-      customerAddress: customers.address,
-      customerCreatedAt: customers.createdAt,
-      assignedTechnicianName: users.fullName
-    })
+    const rows = await db
+      .select({
+        id: tickets.id,
+        ticketId: tickets.ticketId,
+        customerId: tickets.customerId,
+        deviceType: tickets.deviceType,
+        deviceModel: tickets.deviceModel,
+        serialNumber: tickets.serialNumber,
+        purchaseDate: tickets.purchaseDate,
+        issueCategory: tickets.issueCategory,
+        problemDescription: tickets.problemDescription,
+        priority: tickets.priority,
+        serviceStatus: tickets.serviceStatus,
+        paymentStatus: tickets.paymentStatus,
+        estimatedCost: tickets.estimatedCost,
+        finalCost: tickets.finalCost,
+        assignedTechnician: tickets.assignedTechnician,
+        serviceNotes: tickets.serviceNotes,
+        createdAt: tickets.createdAt,
+        completedAt: tickets.completedAt,
+        customerName: customers.name,
+        customerPhone: customers.phone,
+        customerEmail: customers.email,
+        customerAddress: customers.address,
+        customerCreatedAt: customers.createdAt,
+        assignedTechnicianName: users.fullName,
+      })
       .from(tickets)
       .innerJoin(customers, eq(tickets.customerId, customers.id))
       .leftJoin(users, eq(tickets.assignedTechnician, users.id))
@@ -189,12 +246,15 @@ export class PgStorage implements IStorage {
     return rows as TicketWithCustomer[];
   }
 
-  async getTicketsByTechnician(technicianId: string): Promise<TicketWithCustomer[]> {
-    const rows = await db.select({
-      ...tickets,
-      customer: customers,
-      assignedTechnicianName: sql`u.fullName`
-    })
+  async getTicketsByTechnician(
+    technicianId: string
+  ): Promise<TicketWithCustomer[]> {
+    const rows = await db
+      .select({
+        ...tickets,
+        customer: customers,
+        assignedTechnicianName: sql`u.fullName`,
+      })
       .from(tickets)
       .innerJoin(customers, eq(tickets.customerId, customers.id))
       .leftJoin(users, eq(tickets.assignedTechnician, users.id))
@@ -204,11 +264,12 @@ export class PgStorage implements IStorage {
   }
 
   async getTicketsByStatus(status: string): Promise<TicketWithCustomer[]> {
-    const rows = await db.select({
-      ...tickets,
-      customer: customers,
-      assignedTechnicianName: sql`u.fullName`
-    })
+    const rows = await db
+      .select({
+        ...tickets,
+        customer: customers,
+        assignedTechnicianName: sql`u.fullName`,
+      })
       .from(tickets)
       .innerJoin(customers, eq(tickets.customerId, customers.id))
       .leftJoin(users, eq(tickets.assignedTechnician, users.id))
@@ -218,14 +279,26 @@ export class PgStorage implements IStorage {
   }
 
   async getNextTicketSequence(date: string): Promise<number> {
-    const [row] = await db.select().from(ticket_sequences).where(eq(ticket_sequences.date, date));
+    const [row] = await db
+      .select()
+      .from(ticket_sequences)
+      .where(eq(ticket_sequences.date, date));
     let nextSequence = 1;
     if (row) {
-      nextSequence = row.sequence + 1;
-      await db.update(ticket_sequences).set({ sequence: nextSequence }).where(eq(ticket_sequences.date, date));
+      const currentSeq = row.sequence ? parseInt(row.sequence, 10) : 0;
+      nextSequence = currentSeq + 1;
+
+      await db
+        .update(ticket_sequences)
+        .set({ sequence: nextSequence.toString() }) // still string in DB
+        .where(eq(ticket_sequences.date, date));
+      console.log('Updated ticket sequence:', nextSequence);
     } else {
-      await db.insert(ticket_sequences).values({ date, sequence: nextSequence });
+      await db
+        .insert(ticket_sequences)
+        .values({ date, sequence: nextSequence.toString() });
     }
+
     return nextSequence;
   }
 }

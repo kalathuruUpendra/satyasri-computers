@@ -180,9 +180,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/tickets", authenticateToken, requireRole(['frontdesk']), async (req, res) => {
     try {
       const ticketData = insertTicketSchema.parse(req.body);
+      console.log('Received ticket data:', ticketData);
       
       // Find or create customer
       let customer = await storage.getCustomerByPhone(ticketData.customerPhone);
+      console.log('Found customer:', customer);
       if (!customer) {
         customer = await storage.createCustomer({
           name: ticketData.customerName,
@@ -194,9 +196,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate ticket ID
       const today = new Date();
+      console.log('Today:', today);
       const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+      console.log('Date string:', dateStr);
       const sequence = await storage.getNextTicketSequence(dateStr);
+      console.log('Sequence number:', sequence);
       const ticketId = generateTicketId(today, sequence);
+      console.log('Generated ticket ID:', ticketId);
 
       // Create ticket
       const { customerName, customerPhone, customerEmail, customerAddress, ...ticketFields } = ticketData;
@@ -205,6 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketId,
         customerId: customer.id
       } as any);
+      console.log('Created ticket:', ticket);
 
       res.status(201).json({ ...ticket, customer });
     } catch (error) {

@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, DollarSign, Clock, Users, Wrench, BarChart3, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Clock, Users, Wrench, BarChart3, Activity, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
 
 interface ReportsData {
   summary: {
@@ -32,6 +34,50 @@ export default function ReportsDashboard() {
   const { data: reports, isLoading } = useQuery<ReportsData>({
     queryKey: ['/api/reports'],
   });
+  const { data: customers = [] } = useQuery<any[]>({
+    queryKey: ['/api/customers'],
+  });
+
+  const downloadCustomersExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(customers.map((customer: any) => ({
+      'Customer Name': customer.name,
+      'Phone': customer.phone,
+      'Email': customer.email || '',
+      'Address': customer.address || '',
+      'Joined Date': new Date(customer.createdAt).toLocaleDateString(),
+    })));
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
+    XLSX.writeFile(workbook, `customers_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const downloadOrdersExcel = () => {
+    if (!reports?.recentTickets) return;
+    
+    const worksheet = XLSX.utils.json_to_sheet(reports.recentTickets.map((ticket: any) => ({
+      'Ticket ID': ticket.ticketId,
+      'Customer Name': ticket.customer?.name || '',
+      'Phone': ticket.customer?.phone || '',
+      'Device Type': ticket.deviceType,
+      'Device Model': ticket.deviceModel || '',
+      'Issue Category': ticket.issueCategory,
+      'Problem Description': ticket.problemDescription,
+      'Status': ticket.serviceStatus,
+      'Priority': ticket.priority,
+      'Payment Status': ticket.paymentStatus,
+      'Estimated Cost': ticket.estimatedCost || '',
+      'Final Cost': ticket.finalCost || '',
+      'Advance Amount': ticket.advanceAmount || '0',
+      'Assigned Technician': ticket.assignedTechnicianName || '',
+      'Created Date': new Date(ticket.createdAt).toLocaleDateString(),
+      'Completed Date': ticket.completedAt ? new Date(ticket.completedAt).toLocaleDateString() : '',
+    })));
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+    XLSX.writeFile(workbook, `orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
 
   if (isLoading) {
     return (
@@ -64,6 +110,27 @@ export default function ReportsDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Download Section */}
+      <div className="flex flex-wrap gap-4">
+        <Button 
+          onClick={downloadCustomersExcel}
+          className="flex items-center gap-2"
+          data-testid="button-download-customers"
+        >
+          <Download className="h-4 w-4" />
+          Download Customers Excel
+        </Button>
+        <Button 
+          onClick={downloadOrdersExcel}
+          variant="outline"
+          className="flex items-center gap-2"
+          disabled={!reports?.recentTickets?.length}
+          data-testid="button-download-orders"
+        >
+          <Download className="h-4 w-4" />
+          Download Orders Excel
+        </Button>
+      </div>
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card data-testid="card-total-tickets">

@@ -14,6 +14,8 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
+
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -38,7 +40,7 @@ export const tickets = pgTable("tickets", {
   paymentStatus: text("payment_status").notNull().default("Pending"), // Pending, Paid
   estimatedCost: decimal("estimated_cost"),
   finalCost: decimal("final_cost"),
-  assignedTechnician: varchar("assigned_technician"),
+  assignedTechnician: text("assigned_technician"),
   serviceNotes: json("service_notes").$type<Array<{
     id: string;
     note: string;
@@ -48,6 +50,11 @@ export const tickets = pgTable("tickets", {
   }>>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
+});
+
+export const ticket_sequences = pgTable("ticket_sequences", {
+  date: text("date").primaryKey(),
+  sequence: decimal("sequence"),
 });
 
 // Insert schemas
@@ -83,6 +90,7 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({
 
   priority: z.string().min(1),
   problemDescription: z.string().min(1),
+  assignedTechnician: z.string().optional(),
 
   estimatedCost: z.preprocess(val => val === "" ? undefined : Number(val), z.number().optional()),
 });
